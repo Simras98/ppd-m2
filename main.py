@@ -1,4 +1,3 @@
-import numpy
 import numpy as np
 from bs4 import BeautifulSoup
 from calendar import month_name
@@ -75,22 +74,30 @@ def get_constraints():
     }
 
 
-def get_result(value, selected_type):
-    try:
-        if selected_type is None and value is None:
+def get_result(value, selected_contraint):
+    if selected_contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime', '', '0.5']:
+        return 0
+    if selected_contraint in [np.int64, np.float64, np.datetime64, str]:
+        try:
+            selected_contraint(value)
+            return 0
+        except (Exception,):
             return 1
-        if selected_type is None and value is not None:
-            return 0
-        if type(selected_type) == list:
-            if value not in selected_type:
-                return 1
-            else:
-                return 0
-        if selected_type in [np.int64, np.float64, np.datetime64, str]:
-            selected_type(value)
-            return 0
-    except Exception as e:
-        return 1
+    if selected_contraint is None:
+        return 1 if value is None else 0
+    if type(selected_contraint) is list:
+        return 1 if value not in selected_contraint else 0
+    if selected_contraint in ['>= 0', '> 1', '> 0']:
+        try:
+            casted_value = np.float64(value)
+            if selected_contraint.split()[0] == '>=':
+                return 1 if not casted_value >= selected_contraint.split()[1] else 0
+            if selected_contraint.split()[0] == '>':
+                return 1 if not casted_value > selected_contraint.split()[1] else 0
+            if selected_contraint.split()[0] == '<':
+                return 1 if not casted_value < selected_contraint.split()[1] else 0
+        except (Exception,):
+            return 1
 
 
 def analyse(dataframe, constraints):
