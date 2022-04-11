@@ -27,12 +27,12 @@ def get_values():
 
 def select_values(values):
     selected_values = []
-    for avaialable_year in sorted(list(set([value[0] for value in values]))):
-        if st.checkbox(avaialable_year, key=avaialable_year):
+    for available_year in sorted(list(set([value[0] for value in values]))):
+        if st.checkbox(available_year, key=available_year):
             available_months = sorted(sorted(list(set([value[1] for value in values]))), key=list(month_name).index)
             for x, col in enumerate(st.columns(len(available_months))):
-                if col.checkbox(available_months[x], key=str(avaialable_year) + ' ' + available_months[x]):
-                    selected_values.append([avaialable_year, available_months[x]])
+                if col.checkbox(available_months[x], key=str(available_year) + ' ' + available_months[x]):
+                    selected_values.append([available_year, available_months[x]])
     return selected_values
 
 
@@ -88,6 +88,17 @@ def get_constraints():
     }
 
 
+def select_constraints(columns, constraints):
+    selected_constraints = []
+    for column in columns:
+        if st.checkbox(column, key=column):
+            column_constraints = constraints[column]
+            for x, col in enumerate(st.columns(len(column_constraints))):
+                if col.checkbox(column_constraints[x], key=str(column) + ' ' + column_constraints[x]):
+                    selected_constraints.append([column, column_constraints[x]])
+    return selected_constraints
+
+
 def get_result(value, selected_contraint):
     if selected_contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime', '']:
         return 0
@@ -131,37 +142,25 @@ def analyse(dataframe, constraints):
 
 async def streamlit_main():
     st.set_page_config(layout='centered')
-    add_st_elements("h1", "Application d'évaluation de qualité")
-    add_st_elements("h3", "Filtrez les données que vous souhaitez télécharger")
-    add_st_elements("h3", "\n")
+    add_st_elements('h1', "Application d'évaluation de qualité")
+    add_st_elements('h3', 'Filtrez les données que vous souhaitez télécharger')
+    add_st_elements('h3', '\n')
     values = get_values()
-    add_st_elements("h3", "Choisissez un fichier à charger")
+    selected_urls = select_urls(values, select_values(values))
+    add_st_elements('h3', 'Choisissez un fichier à charger')
     uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
-
-    if st.button('Suivant', key='Suivant1'):
+    if st.button('Suivant'):
         if not uploaded_file:
-            selected_urls = select_urls(values, select_values(values))
             if selected_urls is not None:
                 async with aiohttp.ClientSession() as session:
                     responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
                 dataframe = cast_to_dataframe(responses, 'download')
         elif uploaded_file:
             dataframe = cast_to_dataframe(uploaded_file, 'upload')
-        result = analyse(dataframe, get_constraints())
-        st.dataframe(result)
-
-
-        # rules = ['1 - Verifier son type', '2 - Verifier si vide', '3 - Verifier si nulle', '4 - Verifier sa règle de gestion']
-        # selected_rules = []
-        # for column in dataframe.columns:
-        #     if st.checkbox(str(column), key=str(column)):
-        #         available_filters = [rule[1] for rule in rules]
-        #         for x, col in enumerate(st.columns(len(available_filters))):
-        #             if col.checkbox(available_filters[x], key=str(column) + ' ' + available_filters[x]):
-        #                 selected_rules.append([column, available_filters[x]])
-        # if st.button('Suivant', key='Suivant2'):
-        #     for value in selected_rules:
-        #         print(value)
+        selected_constraints = select_constraints(dataframe.columns, get_constraints())
+        if st.button('Analyser'):
+            result = analyse(dataframe, get_constraints())
+            st.dataframe(result)
 
 
 asyncio.run(streamlit_main())
