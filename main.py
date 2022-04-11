@@ -90,12 +90,14 @@ def get_result(value, selected_contraint):
     if selected_contraint in ['>= 0', '> 1', '> 0']:
         try:
             casted_value = np.float64(value)
-            if selected_contraint.split()[0] == '>=':
-                return 1 if not casted_value >= selected_contraint.split()[1] else 0
-            if selected_contraint.split()[0] == '>':
-                return 1 if not casted_value > selected_contraint.split()[1] else 0
-            if selected_contraint.split()[0] == '<':
-                return 1 if not casted_value < selected_contraint.split()[1] else 0
+            casted_compared_value = np.float64(selected_contraint.split()[1])
+            comparator = selected_contraint.split()[0]
+            if comparator == '>=':
+                return 1 if not casted_value >= casted_compared_value else 0
+            if comparator == '>':
+                return 1 if not casted_value > casted_compared_value else 0
+            if comparator == '<':
+                return 1 if not casted_value < casted_compared_value else 0
         except (Exception,):
             return 1
 
