@@ -164,38 +164,3 @@ async def streamlit_main():
 
 
 asyncio.run(streamlit_main())
-
-# async def main():
-#     urls = retrieve_urls()
-#     initialize_streamlit(urls)
-#     # # selected_urls = select_urls(urls)
-#     # selected_urls = ['https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv', 'https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv']
-#     # async with aiohttp.ClientSession() as session:
-#     #     responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
-#     # dataframe = fusion_datas(responses)
-
-
-# def select_urls(urls):
-#     choice = input('1 pour tout charger, 2 pour choisir : ')
-#     if choice == '1':
-#         return urls
-#     if choice == '2':
-#         avaialable_years = sorted(list(set([item[0] for item in urls])))
-#         print(*avaialable_years, sep=', ')
-#         years = input('Choisissez vos années en séparant par un , : ').split(',')
-#         cleaned_years = [item for item in years if item in avaialable_years]
-#         if len(years) != len(cleaned_years):
-#             print('Les années selectionnées ne sont pas toutes correctes, un nettoyage a été effectué : ')
-#             print(*cleaned_years, sep=', ')
-#         avaialable_months = sorted(sorted(list(set([item[1] for item in urls]))), key=list(month_name).index)
-#         print(*avaialable_months, sep=', ')
-#         months = input('Choisissez vos mois en séparant par un , : ').split(',')
-#         cleaned_months = [item for item in months if item in avaialable_months]
-#         if len(months) != len(cleaned_months):
-#             print('Les mois selectionnés ne sont pas toutes corrects, un nettoyage a été effectué : ')
-#             print(*cleaned_months, sep=', ')
-#         cleaned_years_urls = [url for url in urls if url[0] in cleaned_years]
-#         return [url for url in cleaned_years_urls if url[1] in cleaned_months]
-#     else:
-#         print('Choix inconnu')
-#         return None
