@@ -8,8 +8,11 @@ import asyncio
 import io
 import requests
 
+def add_st_elements(type, text):
+    st.markdown("<" + type + " style='text-align: center; color: white;'>" + text + "</" + type + ">", unsafe_allow_html=True)
 
-def retrieve_values():
+
+def get_values():
     values = []
     soup = BeautifulSoup(requests.get('https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page').text, 'html.parser')
     for div in soup.find_all('div', class_='faq-answers')[0:]:
@@ -20,6 +23,17 @@ def retrieve_values():
                 elif row.name == 'ul':
                     values[-1][2] = row.find('a', {'title': 'Yellow Taxi Trip Records'})['href']
     return values
+
+
+def select_values(values):
+    selected_values = []
+    for avaialable_year in sorted(list(set([value[0] for value in values]))):
+        if st.checkbox(avaialable_year, key=avaialable_year):
+            available_months = sorted(sorted(list(set([value[1] for value in values]))), key=list(month_name).index)
+            for x, col in enumerate(st.columns(len(available_months))):
+                if col.checkbox(available_months[x], key=str(avaialable_year) + ' ' + available_months[x]):
+                    selected_values.append([avaialable_year, available_months[x]])
+    return selected_values
 
 
 def select_urls(values, selected_values):
@@ -40,14 +54,14 @@ async def get_datas(session, url):
         return None
 
 
-def fusion_datas(lists, choice):
-    if choice == 'upload':
-        li = []
-        for element in lists:
-            li.append(pd.read_csv(element, index_col=None, header=0, dtype=str))
-        dataframe = pd.concat(li, axis=0, ignore_index=True)
-    elif choice == 'file':
-        dataframe = pd.read_csv(lists, index_col=None, header=0, dtype=str)
+def cast_to_dataframe(data, choice):
+    if choice == 'download':
+        temp = []
+        for element in data:
+            temp.append(pd.read_csv(element, index_col=None, header=0, dtype=str))
+        dataframe = pd.concat(temp, axis=0, ignore_index=True)
+    elif choice == 'upload':
+        dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
     return dataframe
 
 
@@ -116,29 +130,23 @@ def analyse(dataframe, constraints):
     return result
 
 async def streamlit_main():
-    values = retrieve_values()
     st.set_page_config(layout='centered')
-    st.markdown("<h1 style='text-align: center; color: white;'>Application d'évaluation de qualité</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: white;'>Filtrez vos données à télécharger\n</h3>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: white;'>\n</h3>", unsafe_allow_html=True)
-    selected_files = []
-    for avaialable_year in sorted(list(set([value[0] for value in values]))):
-        if st.checkbox(avaialable_year, key=avaialable_year):
-            available_months = sorted(sorted(list(set([value[1] for value in values]))), key=list(month_name).index)
-            for x, col in enumerate(st.columns(len(available_months))):
-                if col.checkbox(available_months[x], key=str(avaialable_year) + ' ' + available_months[x]):
-                    selected_files.append([avaialable_year, available_months[x]])
-    st.markdown("<h3 style='color: white;'>Choisissez un fichier à charger</h3>", unsafe_allow_html=True)
+    add_st_elements("h1", "Application d'évaluation de qualité")
+    add_st_elements("h3", "Filtrez les données que vous souhaitez télécharger")
+    add_st_elements("h3", "\n")
+    values = get_values()
+    add_st_elements("h3", "Choisissez un fichier à charger")
     uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
+
     if st.button('Suivant', key='Suivant1'):
         if not uploaded_file:
-            selected_urls = select_urls(values, selected_files)
+            selected_urls = select_urls(values, select_values(values))
             if selected_urls is not None:
                 async with aiohttp.ClientSession() as session:
                     responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
-                dataframe = fusion_datas(responses, 'upload')
+                dataframe = cast_to_dataframe(responses, 'download')
         elif uploaded_file:
-            dataframe = fusion_datas(uploaded_file, 'file')
+            dataframe = cast_to_dataframe(uploaded_file, 'upload')
         result = analyse(dataframe, get_constraints())
         st.dataframe(result)
 
