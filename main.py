@@ -65,7 +65,7 @@ def get_constraints():
         'payment_type': [np.int64, None, ['1', '2', '3', '4', '5', '6']],
         'fare_amount': [np.float64, None, '> 0'],
         'extra': [np.float64, None, ['0.5', '1']],
-        'mta_tax': [np.float64, None, '0.5'],
+        'mta_tax': [np.float64, None, 0.5],
         'tip_amount': [np.float64, None, '>= 0'],
         'tolls_amount': [np.float64, None, '>= 0'],
         'improvement_surcharge': [np.float64, None, ''],
@@ -75,7 +75,7 @@ def get_constraints():
 
 
 def get_result(value, selected_contraint):
-    if selected_contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime', '', '0.5']:
+    if selected_contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime', '']:
         return 0
     if selected_contraint in [np.int64, np.float64, np.datetime64, str]:
         try:
@@ -83,6 +83,8 @@ def get_result(value, selected_contraint):
             return 0
         except (Exception,):
             return 1
+    if type(selected_contraint) is float:
+        return 1 if not np.float64(value) == selected_contraint else 0
     if selected_contraint is None:
         return 1 if value is None else 0
     if type(selected_contraint) is list:
@@ -111,8 +113,7 @@ def analyse(dataframe, constraints):
             for index, row in dataframe.iterrows():
                 temp += get_result(row[column], constraint)
             result[column][x] = temp
-            print(column + ' ' + str(result[column][x]))
-
+    return result
 
 async def streamlit_main():
     values = retrieve_values()
@@ -138,7 +139,10 @@ async def streamlit_main():
                 dataframe = fusion_datas(responses, 'upload')
         elif uploaded_file:
             dataframe = fusion_datas(uploaded_file, 'file')
-            analyse(dataframe, get_constraints())
+        result = analyse(dataframe, get_constraints())
+        st.dataframe(result)
+
+
         # rules = ['1 - Verifier son type', '2 - Verifier si vide', '3 - Verifier si nulle', '4 - Verifier sa règle de gestion']
         # selected_rules = []
         # for column in dataframe.columns:
