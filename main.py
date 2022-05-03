@@ -1,5 +1,4 @@
 from sqlalchemy import create_engine
-from datetime import datetime
 from bs4 import BeautifulSoup
 import aiohttp as aiohttp
 import streamlit as st
@@ -17,16 +16,8 @@ def add_st_elements(type, style, text):
 
 
 def get_values():
-    values = []
     soup = BeautifulSoup(requests.get('https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page').text, 'html.parser')
-    for div in soup.find_all('div', class_='faq-answers')[0:]:
-        for td in div.find('table').find('tbody').find('tr').find_all('td'):
-            for row in td.contents:
-                if row.name in ['b', 'p']:
-                    values.append([div['id'][3:].replace('\n', ''), row.getText().replace('\n', '').replace(' ', ''), None])
-                elif row.name == 'ul':
-                    values[-1][2] = row.find('a', {'title': 'Yellow Taxi Trip Records'})['href']
-    return values
+    return [[url['href'][-11:-7], url['href'][-6:-4], url['href']] for url in soup.find_all('a', {'title': 'Yellow Taxi Trip Records'})]
 
 
 def select_values(values):
@@ -35,7 +26,7 @@ def select_values(values):
         if st.checkbox(available_year, key=available_year):
             available_months = [value[1] for value in values if value[0] == available_year]
             for x, col in enumerate(st.columns(len(available_months))):
-                if col.checkbox(str(datetime.strptime(available_months[x], "%B").month), key=str(available_year) + ' ' + available_months[x]):
+                if col.checkbox(available_months[x], key=str(available_year) + ' ' + available_months[x]):
                     selected_values.append([available_year, available_months[x]])
     return selected_values
 
@@ -210,7 +201,7 @@ async def streamlit_main():
     add_st_elements('h1', 'left', "Application d'évaluation de qualité")
     check_database()
     if 'database' not in st.session_state:
-        add_st_elements('h3', 'left', 'Base de données non initialisée, choisissez comment vous souhaitez la completer')
+        add_st_elements('h3', 'left', 'Base de données inexistante')
         add_st_elements('h3', 'left', '\n')
         add_st_elements('h3', 'left', 'Choisissez les fichiers que vous souhaitez télécharger')
         add_st_elements('h3', 'left', '\n')
@@ -230,7 +221,7 @@ async def streamlit_main():
             else:
                 write_to_database(uploaded_file, 'upload')
     if 'database' in st.session_state:
-        add_st_elements('h3', 'left', 'Base de données initialisées')
+        add_st_elements('h3', 'left', 'Base de données existante')
         if st.button('Reset'):
             reset_database()
         if 'database' in st.session_state:
