@@ -67,6 +67,7 @@ def write_to_database(data, choice):
         dataframe = pd.concat(temp, axis=0, ignore_index=True)
     elif choice == 'upload':
         dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
+    dataframe["Date"] = dataframe["tpep_pickup_datetime"].str[:7]
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
@@ -81,7 +82,7 @@ def get_columns():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
         cursor.execute('SHOW COLUMNS from yellow_tripdata')
-        columns = [x[0] for x in cursor.fetchall() if x[0] != 'index']
+        columns = [x[0] for x in cursor.fetchall() if x[0] not in ['index', 'Date']]
     db_connection.close()
     return columns
 
@@ -99,7 +100,7 @@ def check_database():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         cursor.execute('SHOW DATABASES')
-        databases = cursor.fetchall()
+        databases = [x[0] for x in cursor.fetchall()]
     db_connection.close()
     if 'ppd' in databases:
         st.session_state['database'] = 'ok'
@@ -223,7 +224,7 @@ async def streamlit_main():
                     write_to_database(responses, 'download')
             else:
                 write_to_database(uploaded_file, 'upload')
-    if 'database' in st.session_state:
+    else:
         add_st_elements('h3', 'left', 'Base de données initialisées')
         add_st_elements('h3', 'left', '\n')
         add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
