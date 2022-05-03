@@ -5,6 +5,7 @@ import aiohttp as aiohttp
 import streamlit as st
 import pandas as pd
 import numpy as np
+import cryptography
 import requests
 import asyncio
 import pymysql
@@ -58,7 +59,7 @@ async def get_datas(session, url):
         return None
 
 
-def cast_to_dataframe(data, choice):
+def write_to_database(data, choice):
     if choice == 'download':
         temp = []
         for element in data:
@@ -66,24 +67,45 @@ def cast_to_dataframe(data, choice):
         dataframe = pd.concat(temp, axis=0, ignore_index=True)
     elif choice == 'upload':
         dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
-    return dataframe
-
-
-def create_database(dataframe):
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
-    try:
-        with db_connection.cursor() as cursor:
-            cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
-    finally:
-        db_connection.close()
+    with db_connection.cursor() as cursor:
+        cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
+    db_connection.close()
     db_connection = create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect()
     try:
         dataframe.to_sql('yellow_tripdata', db_connection, if_exists='replace')
         db_connection.close()
-        return True
+        st.session_state['database'] = 'ok'
     except (Exception,):
         db_connection.close()
-        return False
+
+
+def get_columns():
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+    with db_connection.cursor() as cursor:
+        cursor.execute('SHOW COLUMNS from yellow_tripdata;')
+        columns = [x[0] for x in cursor.fetchall() if x[0] != 'index']
+    db_connection.close()
+    return columns
+
+
+def get_rows():
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+    with db_connection.cursor() as cursor:
+        cursor.execute('SELECT COUNT(*) FROM yellow_tripdata;')
+        rows = cursor.fetchall()[0][0]
+    db_connection.close()
+    return rows
+
+
+def check_database():
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+    with db_connection.cursor() as cursor:
+        cursor.execute('SHOW DATABASES LIKE "ppd";')
+        database = cursor.fetchall()[0][0]
+    db_connection.close()
+    if database == 'ppd':
+        st.session_state['database'] = 'ok'
 
 
 def get_constraints():
@@ -123,51 +145,86 @@ def select_constraints(columns):
     return selected_constraints
 
 
-def get_result(column, column_two, contraint):
-    if contraint == '':
-        return 0
-    if contraint == '< tpep_dropoff_datetime':
-        return np.where((column < column_two), False, True).sum()
-    if contraint == '> tpep_pickup_datetime':
-        return np.where((column > column_two), False, True).sum()
-    if contraint in [pd.to_numeric, pd.to_datetime]:
-        return contraint(column, errors='coerce').isna().sum()
-    if contraint in [str, None]:
-        return column.isna().sum()
-    if type(contraint) is list:
-        return column[column.isin(contraint) == False].count()
-    if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-        casted_column = pd.to_numeric(column, errors='coerce')
-        casted_compared_value = np.float64(contraint.split()[1])
-        comparator = contraint.split()[0]
-        if comparator == '>=':
-            return column[casted_column < casted_compared_value].count()
-        if comparator == '>':
-            return column[casted_column <= casted_compared_value].count()
-        if comparator == '<':
-            return column[casted_column >= casted_compared_value].count()
-        if comparator == '=':
-            return column[casted_column != casted_compared_value].count()
+def get_result(column, contraint):
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+    with db_connection.cursor() as cursor:
+        if contraint == '':
+            return 0
+        if contraint == '< tpep_dropoff_datetime':
+            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < tpep_dropoff_datetime')
+        if contraint == '> tpep_pickup_datetime':
+            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' > tpep_pickup_datetime')
+        if contraint in [pd.to_numeric, None]:
+            if column in ['congestion_surcharge', 'extra', 'fare_amount', 'improvement_surcharge', 'mta_tax', 'tip_amount', 'tolls_amount', 'total_amount', 'trip_distance']:
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
+            else:
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
+        if contraint in [pd.to_datetime, None]:
+            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%d,%m,%Y") IS NOT NULL')
+        if contraint in [str, None]:
+            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' IS NULL')
+        if type(contraint) is list:
+            if column == 'extra':
+                return cursor.execute('SELECT extra FROM ppd.yellow_tripdata WHERE extra != 0.5 AND extra != 1.0;')
+            if column in ['payment_type', 'RatecodeID']:
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6;')
+            if column == 'store_and_fwd_flag':
+                return cursor.execute('SELECT store_and_fwd_flag FROM ppd.yellow_tripdata WHERE store_and_fwd_flag NOT LIKE "Y" AND store_and_fwd_flag NOT LIKE "N";')
+            if column == 'VendorID':
+                return cursor.execute('SELECT VendorID FROM ppd.yellow_tripdata WHERE VendorID != 1 AND VendorID != 2;')
+        if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
+            casted_compared_value = contraint.split()[1]
+            comparator = contraint.split()[0]
+            if comparator == '>=':
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < ' + casted_compared_value + ';')
+            if comparator == '>':
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' <= ' + casted_compared_value + ';')
+            if comparator == '<':
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' => ' + casted_compared_value + ';')
+            if comparator == '=':
+                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' != ' + casted_compared_value + ';')
 
 
-def analyse(dataframe, contraints):
+# def get_result(column, column_two, contraint):
+#     if contraint == '':
+#         return 0
+#     if contraint == '< tpep_dropoff_datetime':
+#         return np.where((column < column_two), False, True).sum()
+#     if contraint == '> tpep_pickup_datetime':
+#         return np.where((column > column_two), False, True).sum()
+#     if contraint in [pd.to_numeric, pd.to_datetime]:
+#         return contraint(column, errors='coerce').isna().sum()
+#     if contraint in [str, None]:
+#         return column.isna().sum()
+#     if type(contraint) is list:
+#         return column[column.isin(contraint) == False].count()
+#     if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
+#         casted_column = pd.to_numeric(column, errors='coerce')
+#         casted_compared_value = np.float64(contraint.split()[1])
+#         comparator = contraint.split()[0]
+#         if comparator == '>=':
+#             return column[casted_column < casted_compared_value].count()
+#         if comparator == '>':
+#             return column[casted_column <= casted_compared_value].count()
+#         if comparator == '<':
+#             return column[casted_column >= casted_compared_value].count()
+#         if comparator == '=':
+#             return column[casted_column != casted_compared_value].count()
+
+
+def analyse(contraints):
     result = {}
     for column in contraints.keys():
         result[column] = [None] * 3
         for x, constraint in enumerate(contraints[column]):
-            if column == 'tpep_pickup_datetime' and constraint == '< tpep_dropoff_datetime':
-                result[column][x] = get_result(dataframe[column], dataframe['tpep_dropoff_datetime'], constraint)
-            elif column == 'tpep_dropoff_datetime' and constraint == '> tpep_pickup_datetime':
-                result[column][x] = get_result(dataframe[column], dataframe['tpep_pickup_datetime'], constraint)
-            else:
-                result[column][x] = get_result(dataframe[column], None, constraint)
+            result[column][x] = get_result(column, constraint)
     return result
 
 
-def display_result(result, dataframe):
+def display_result(result, rows):
     constraints = get_constraints()
     for key, value in result.items():
-        result[key] = [constraints[key][x][1] + ' : ' + str(int(100 - element / len(dataframe[key]))) + ' %' if element is not None else '' for x, element in enumerate(value)]
+        result[key] = [constraints[key][x][1] + ' : ' + str(int(100 - element / rows)) + ' %' if element is not None else '' for x, element in enumerate(value)]
     st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
     st.table(result)
 
@@ -175,33 +232,38 @@ def display_result(result, dataframe):
 async def streamlit_main():
     st.set_page_config(layout='centered')
     add_st_elements('h1', 'left', "Application d'évaluation de qualité")
-    add_st_elements('h3', 'left', 'Choisissez les fichiers que vous souhaitez télécharger')
+    check_database()
+    if 'database' not in st.session_state:
+        add_st_elements('h3', 'left', 'Base de données non initialisée, choisissez comment vous souhaitez la completer')
+        add_st_elements('h3', 'left', '\n')
+        add_st_elements('h3', 'left', 'Choisissez les fichiers que vous souhaitez télécharger')
+        add_st_elements('h3', 'left', '\n')
+        values = get_values()
+        selected_urls = select_urls(values, select_values(values))
+        add_st_elements('h3', 'left', 'Choisissez un fichier à charger')
+        uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
+        add_st_elements('h3', 'left', '\n')
+        if st.button('Suivant') or 'suivant' in st.session_state:
+            if 'suivant' not in st.session_state:
+                st.session_state['suivant'] = 'ok'
+            if not uploaded_file:
+                if selected_urls is not None:
+                    async with aiohttp.ClientSession() as session:
+                        responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
+                    write_to_database(responses, 'download')
+                else:
+                    write_to_database(uploaded_file, 'upload')
+    add_st_elements('h3', 'left', 'Base de données initialisées')
     add_st_elements('h3', 'left', '\n')
-    values = get_values()
-    selected_urls = select_urls(values, select_values(values))
-    add_st_elements('h3', 'left', 'Choisissez un fichier à charger')
-    uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
+    add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
+    selected_constraints = select_constraints(get_columns())
     add_st_elements('h3', 'left', '\n')
-    if st.button('Suivant') or 'suivant' in st.session_state:
-        if 'suivant' not in st.session_state:
-            st.session_state['suivant'] = 'ok'
-        if not uploaded_file:
-            if selected_urls is not None:
-                async with aiohttp.ClientSession() as session:
-                    responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
-                dataframe = cast_to_dataframe(responses, 'download')
-        else:
-            dataframe = cast_to_dataframe(uploaded_file, 'upload')
-        if create_database(dataframe):
-            add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
-            selected_constraints = select_constraints(dataframe.columns)
-            add_st_elements('h3', 'left', '\n')
-            if st.button('Analyser'):
-                start = time.time()
-                result = analyse(dataframe, selected_constraints)
-                add_st_elements('h3', 'left', "Résultat de l'analyse")
-                display_result(result, dataframe)
-                add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
+    if st.button('Analyser'):
+        start = time.time()
+        result = analyse(selected_constraints)
+        add_st_elements('h3', 'left', "Résultat de l'analyse")
+        display_result(result, get_rows())
+        add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
 
 
 asyncio.run(streamlit_main())
