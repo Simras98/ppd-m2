@@ -72,18 +72,15 @@ def write_to_database(data, choice):
         cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
     db_connection.close()
     db_connection = create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect()
-    try:
-        dataframe.to_sql('yellow_tripdata', db_connection, if_exists='replace')
-        db_connection.close()
-        st.session_state['database'] = 'ok'
-    except (Exception,):
-        db_connection.close()
+    dataframe.to_sql('yellow_tripdata', db_connection, if_exists='replace')
+    db_connection.close()
+    st.session_state['database'] = 'ok'
 
 
 def get_columns():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
-        cursor.execute('SHOW COLUMNS from yellow_tripdata;')
+        cursor.execute('SHOW COLUMNS from yellow_tripdata')
         columns = [x[0] for x in cursor.fetchall() if x[0] != 'index']
     db_connection.close()
     return columns
@@ -92,19 +89,19 @@ def get_columns():
 def get_rows():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
-        cursor.execute('SELECT COUNT(*) FROM yellow_tripdata;')
+        cursor.execute('SELECT COUNT(*) FROM yellow_tripdata')
         rows = cursor.fetchall()[0][0]
     db_connection.close()
     return rows
 
 
 def check_database():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
-        cursor.execute('SHOW DATABASES LIKE "ppd";')
-        database = cursor.fetchall()[0][0]
+        cursor.execute('SHOW DATABASES')
+        databases = cursor.fetchall()
     db_connection.close()
-    if database == 'ppd':
+    if 'ppd' in databases:
         st.session_state['database'] = 'ok'
 
 
@@ -185,33 +182,6 @@ def get_result(column, contraint):
                 return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' != ' + casted_compared_value + ';')
 
 
-# def get_result(column, column_two, contraint):
-#     if contraint == '':
-#         return 0
-#     if contraint == '< tpep_dropoff_datetime':
-#         return np.where((column < column_two), False, True).sum()
-#     if contraint == '> tpep_pickup_datetime':
-#         return np.where((column > column_two), False, True).sum()
-#     if contraint in [pd.to_numeric, pd.to_datetime]:
-#         return contraint(column, errors='coerce').isna().sum()
-#     if contraint in [str, None]:
-#         return column.isna().sum()
-#     if type(contraint) is list:
-#         return column[column.isin(contraint) == False].count()
-#     if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-#         casted_column = pd.to_numeric(column, errors='coerce')
-#         casted_compared_value = np.float64(contraint.split()[1])
-#         comparator = contraint.split()[0]
-#         if comparator == '>=':
-#             return column[casted_column < casted_compared_value].count()
-#         if comparator == '>':
-#             return column[casted_column <= casted_compared_value].count()
-#         if comparator == '<':
-#             return column[casted_column >= casted_compared_value].count()
-#         if comparator == '=':
-#             return column[casted_column != casted_compared_value].count()
-
-
 def analyse(contraints):
     result = {}
     for column in contraints.keys():
@@ -251,19 +221,20 @@ async def streamlit_main():
                     async with aiohttp.ClientSession() as session:
                         responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
                     write_to_database(responses, 'download')
-                else:
-                    write_to_database(uploaded_file, 'upload')
-    add_st_elements('h3', 'left', 'Base de données initialisées')
-    add_st_elements('h3', 'left', '\n')
-    add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
-    selected_constraints = select_constraints(get_columns())
-    add_st_elements('h3', 'left', '\n')
-    if st.button('Analyser'):
-        start = time.time()
-        result = analyse(selected_constraints)
-        add_st_elements('h3', 'left', "Résultat de l'analyse")
-        display_result(result, get_rows())
-        add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
+            else:
+                write_to_database(uploaded_file, 'upload')
+    if 'database' in st.session_state:
+        add_st_elements('h3', 'left', 'Base de données initialisées')
+        add_st_elements('h3', 'left', '\n')
+        add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
+        selected_constraints = select_constraints(get_columns())
+        add_st_elements('h3', 'left', '\n')
+        if st.button('Analyser'):
+            start = time.time()
+            result = analyse(selected_constraints)
+            add_st_elements('h3', 'left', "Résultat de l'analyse")
+            display_result(result, get_rows())
+            add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
 
 
 asyncio.run(streamlit_main())
