@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 import aiohttp as aiohttp
 import streamlit as st
 import pandas as pd
-import numpy as np
 import cryptography
 import requests
 import asyncio
@@ -78,6 +77,24 @@ def write_to_database(data, choice):
     st.session_state['database'] = 'ok'
 
 
+def check_database():
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+    with db_connection.cursor() as cursor:
+        cursor.execute('SHOW DATABASES')
+        databases = [x[0] for x in cursor.fetchall()]
+    db_connection.close()
+    if 'ppd' in databases:
+        st.session_state['database'] = 'ok'
+
+
+def reset_database():
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+    with db_connection.cursor() as cursor:
+        cursor.execute('DROP DATABASE ppd')
+    db_connection.close()
+    del st.session_state['database']
+
+
 def get_columns():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
@@ -96,36 +113,26 @@ def get_rows():
     return rows
 
 
-def check_database():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
-    with db_connection.cursor() as cursor:
-        cursor.execute('SHOW DATABASES')
-        databases = [x[0] for x in cursor.fetchall()]
-    db_connection.close()
-    if 'ppd' in databases:
-        st.session_state['database'] = 'ok'
-
-
 def get_constraints():
     return {
-        'congestion_surcharge': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['', '']],
-        'DOLocationID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['', '']],
-        'extra': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], [['0.5', '1.0'], 'N appartient à [0.5, 1.0]']],
-        'fare_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['> 0', 'N est > 0']],
-        'improvement_surcharge': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['', '']],
-        'mta_tax': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
-        'passenger_count': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['>= 1', 'N est pas >= 1']],
-        'payment_type': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-        'PULocationID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['', '']],
-        'RatecodeID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-        'store_and_fwd_flag': [[str, "N'est pas de type str"], [None, 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
-        'tip_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'tolls_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'total_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'tpep_dropoff_datetime': [[pd.to_datetime, "N'est pas de type date"], [None, 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
-        'tpep_pickup_datetime': [[pd.to_datetime, "N'est pas de type date"], [None, 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
-        'trip_distance': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'VendorID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
+        'congestion_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
+        'DOLocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
+        'extra': [['float', "N'est pas de type float"], ['none', 'Est vide'], [['0.5', '1.0'], 'N appartient pas à [0.5, 1.0]']],
+        'fare_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['> 0', 'N est pas > 0']],
+        'improvement_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
+        'mta_tax': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
+        'passenger_count': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['>= 1', 'N est pas >= 1']],
+        'payment_type': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+        'PULocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
+        'RatecodeID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+        'store_and_fwd_flag': [['str', "N'est pas de type str"], ['none', 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
+        'tip_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'tolls_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'total_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'tpep_dropoff_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
+        'tpep_pickup_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
+        'trip_distance': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'VendorID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
 
 
 def select_constraints(columns):
@@ -145,43 +152,40 @@ def select_constraints(columns):
 
 
 def get_result(column, contraint):
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
         if contraint == '':
             return ''
-        if contraint == '< tpep_dropoff_datetime':
-            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < tpep_dropoff_datetime')
-        if contraint == '> tpep_pickup_datetime':
-            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' > tpep_pickup_datetime')
-        if contraint is pd.to_numeric:
-            if column in ['congestion_surcharge', 'extra', 'fare_amount', 'improvement_surcharge', 'mta_tax', 'tip_amount', 'tolls_amount', 'total_amount', 'trip_distance']:
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
-            else:
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
-        if contraint is pd.to_datetime:
-            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%d,%m,%Y") IS NOT NULL')
-        if contraint is None:
-            return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' IS NULL')
+        if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
+            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
+        if contraint == 'float':
+            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
+        if contraint == 'int':
+            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
+        if contraint == 'date':
+            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
+        if contraint == 'none':
+            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' IS NULL')
         if type(contraint) is list:
             if column == 'extra':
-                return cursor.execute('SELECT extra FROM ppd.yellow_tripdata WHERE extra != 0.5 AND extra != 1.0;')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 0.5 AND ' + column + ' != 1.0')
             if column in ['payment_type', 'RatecodeID']:
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6;')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6')
             if column == 'store_and_fwd_flag':
-                return cursor.execute('SELECT store_and_fwd_flag FROM ppd.yellow_tripdata WHERE store_and_fwd_flag NOT LIKE "Y" AND store_and_fwd_flag NOT LIKE "N";')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
             if column == 'VendorID':
-                return cursor.execute('SELECT VendorID FROM ppd.yellow_tripdata WHERE VendorID != 1 AND VendorID != 2;')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 1 AND ' + column + ' != 2')
         if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-            casted_compared_value = contraint.split()[1]
+            compared_value = contraint.split()[1]
             comparator = contraint.split()[0]
             if comparator == '>=':
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < ' + casted_compared_value + ';')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < ' + compared_value)
             if comparator == '>':
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' <= ' + casted_compared_value + ';')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' <= ' + compared_value)
             if comparator == '<':
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' => ' + casted_compared_value + ';')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' => ' + compared_value)
             if comparator == '=':
-                return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' != ' + casted_compared_value + ';')
+                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != ' + compared_value)
 
 
 def analyse(contraints):
@@ -225,18 +229,21 @@ async def streamlit_main():
                     write_to_database(responses, 'download')
             else:
                 write_to_database(uploaded_file, 'upload')
-    else:
+    if 'database' in st.session_state:
         add_st_elements('h3', 'left', 'Base de données initialisées')
-        add_st_elements('h3', 'left', '\n')
-        add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
-        selected_constraints = select_constraints(get_columns())
-        add_st_elements('h3', 'left', '\n')
-        if st.button('Analyser'):
-            start = time.time()
-            result = analyse(selected_constraints)
-            add_st_elements('h3', 'left', "Résultat de l'analyse")
-            display_result(result, get_rows())
-            add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
+        if st.button('Reset'):
+            reset_database()
+        if 'database' in st.session_state:
+            add_st_elements('h3', 'left', '\n')
+            add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
+            selected_constraints = select_constraints(get_columns())
+            add_st_elements('h3', 'left', '\n')
+            if st.button('Analyser'):
+                start = time.time()
+                result = analyse(selected_constraints)
+                add_st_elements('h3', 'left', "Résultat de l'analyse")
+                display_result(result, get_rows())
+                add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
 
 
 asyncio.run(streamlit_main())
