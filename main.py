@@ -66,7 +66,7 @@ def write_to_database(data, choice):
         dataframe = pd.concat(temp, axis=0, ignore_index=True)
     elif choice == 'upload':
         dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
-    dataframe["Date"] = dataframe["tpep_pickup_datetime"].str[:7]
+    dataframe['date'] = dataframe['tpep_pickup_datetime'].str[:7]
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
@@ -98,7 +98,7 @@ def reset_database():
 def get_columns():
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
-        cursor.execute('SHOW COLUMNS from yellow_tripdata')
+        cursor.execute('SHOW COLUMNS FROM yellow_tripdata')
         columns = [x[0] for x in cursor.fetchall() if x[0] not in ['index', 'Date']]
     db_connection.close()
     return columns
@@ -197,7 +197,7 @@ def analyse(contraints):
     return result
 
 
-def display_result(result, rows):
+def display_result(result):
     constraints = get_constraints()
     for key, value in result.items():
         result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
@@ -242,8 +242,8 @@ async def streamlit_main():
                 start = time.time()
                 result = analyse(selected_constraints)
                 add_st_elements('h3', 'left', "Résultat de l'analyse")
-                display_result(result, get_rows())
-                add_st_elements('p', 'left', str("{:.2f}".format(time.time() - start)) + ' s pour analyser les données')
+                display_result(result)
+                add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
 
 
 asyncio.run(streamlit_main())
