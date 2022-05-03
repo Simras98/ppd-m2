@@ -108,24 +108,24 @@ def check_database():
 
 def get_constraints():
     return {
-        'congestion_surcharge': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['', '']],
-        'DOLocationID': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], ['', '']],
-        'extra': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], [['0.5', '1.0'], 'Appartient à [0.5, 1.0]']],
-        'fare_amount': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['> 0', 'Est > 0']],
-        'improvement_surcharge': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['', '']],
-        'mta_tax': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['= 0.5', 'Est = 0.5']],
-        'passenger_count': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], ['>= 1', 'Est >= 1']],
-        'payment_type': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], [['1', '2', '3', '4', '5', '6'], 'Appartient à [1, 2, 3, 4, 5, 6]']],
-        'PULocationID': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], ['', '']],
-        'RatecodeID': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], [['1', '2', '3', '4', '5', '6'], 'Appartient à [1, 2, 3, 4, 5, 6]']],
-        'store_and_fwd_flag': [[str, 'Est de type str'], [None, "N'est pas vide"], [['Y', 'N'], 'Appartient à [Y, N]']],
-        'tip_amount': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['>= 0', 'Est >= 0']],
-        'tolls_amount': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['>= 0', 'Est >= 0']],
-        'total_amount': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['>= 0', 'Est >= 0']],
-        'tpep_dropoff_datetime': [[pd.to_datetime, 'Est de type date'], [None, "N'est pas vide"], ['> tpep_pickup_datetime', 'Est > tpep_pickup_datetime']],
-        'tpep_pickup_datetime': [[pd.to_datetime, 'Est de type date'], [None, "N'est pas vide"], ['< tpep_dropoff_datetime', 'Est < tpep_dropoff_datetime']],
-        'trip_distance': [[pd.to_numeric, 'Est de type float'], [None, "N'est pas vide"], ['>= 0', 'Est >= 0']],
-        'VendorID': [[pd.to_numeric, 'Est de type int'], [None, "N'est pas vide"], [['1', '2'], 'Appartient à [1, 2]']]}
+        'congestion_surcharge': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['', '']],
+        'DOLocationID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['', '']],
+        'extra': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], [['0.5', '1.0'], 'N appartient à [0.5, 1.0]']],
+        'fare_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['> 0', 'N est > 0']],
+        'improvement_surcharge': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['', '']],
+        'mta_tax': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
+        'passenger_count': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['>= 1', 'N est pas >= 1']],
+        'payment_type': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+        'PULocationID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], ['', '']],
+        'RatecodeID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+        'store_and_fwd_flag': [[str, "N'est pas de type str"], [None, 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
+        'tip_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'tolls_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'total_amount': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'tpep_dropoff_datetime': [[pd.to_datetime, "N'est pas de type date"], [None, 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
+        'tpep_pickup_datetime': [[pd.to_datetime, "N'est pas de type date"], [None, 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
+        'trip_distance': [[pd.to_numeric, "N'est pas de type float"], [None, 'Est vide'], ['>= 0', 'N est pas >= 0']],
+        'VendorID': [[pd.to_numeric, "N'est pas de type int"], [None, 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
 
 
 def select_constraints(columns):
@@ -137,9 +137,10 @@ def select_constraints(columns):
             for x, col in enumerate(st.columns(len(column_constraints))):
                 if col.checkbox(str(column_constraints[x]), key=str(column) + ' ' + str(column_constraints[x])):
                     if column not in selected_constraints:
-                        selected_constraints[column] = [constraints[column][x][0]]
+                        selected_constraints[column] = [''] * 3
+                        selected_constraints[column][x] = constraints[column][x][0]
                     else:
-                        selected_constraints[column] = selected_constraints[column] + [constraints[column][x][0]]
+                        selected_constraints[column][x] = constraints[column][x][0]
     return selected_constraints
 
 
@@ -147,19 +148,19 @@ def get_result(column, contraint):
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         if contraint == '':
-            return 0
+            return ''
         if contraint == '< tpep_dropoff_datetime':
             return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' < tpep_dropoff_datetime')
         if contraint == '> tpep_pickup_datetime':
             return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' > tpep_pickup_datetime')
-        if contraint in [pd.to_numeric, None]:
+        if contraint is pd.to_numeric:
             if column in ['congestion_surcharge', 'extra', 'fare_amount', 'improvement_surcharge', 'mta_tax', 'tip_amount', 'tolls_amount', 'total_amount', 'trip_distance']:
                 return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
             else:
                 return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
-        if contraint in [pd.to_datetime, None]:
+        if contraint is pd.to_datetime:
             return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%d,%m,%Y") IS NOT NULL')
-        if contraint in [str, None]:
+        if contraint is None:
             return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + column + ' IS NULL')
         if type(contraint) is list:
             if column == 'extra':
@@ -195,7 +196,7 @@ def analyse(contraints):
 def display_result(result, rows):
     constraints = get_constraints()
     for key, value in result.items():
-        result[key] = [constraints[key][x][1] + ' : ' + str(int(100 - element / rows)) + ' %' if element is not None else '' for x, element in enumerate(value)]
+        result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
     st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
     st.table(result)
 
