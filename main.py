@@ -126,10 +126,10 @@ def get_constraints():
         'VendorID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
 
 
-def select_constraints(columns):
+def select_constraints():
     constraints = get_constraints()
     selected_constraints = {}
-    for column in columns:
+    for column in constraints.keys():
         if st.checkbox(column, key=column):
             column_constraints = [element[1] for element in constraints[column]]
             for x, col in enumerate(st.columns(len(column_constraints))):
@@ -211,15 +211,26 @@ async def streamlit_main():
         uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
         add_st_elements('h3', 'left', '\n')
         if st.button('Suivant') or 'suivant' in st.session_state:
+            add_st_elements('h3', 'left', '\n')
             if 'suivant' not in st.session_state:
                 st.session_state['suivant'] = 'ok'
+            database_infos = st.empty()
             if not uploaded_file:
                 if selected_urls is not None:
+                    database_infos.text('Telechargement des fichiers')
                     async with aiohttp.ClientSession() as session:
                         responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
+                    database_infos.empty()
+                    database_infos.text('Données telechargées, chargement dans la base de données')
                     write_to_database(responses, 'download')
+                    database_infos.empty()
+                    database_infos.text('Données chargéss dans la base de données')
             else:
+                database_infos.text('Données telechargéss, chargement dans la base de données')
                 write_to_database(uploaded_file, 'upload')
+                database_infos.empty()
+                database_infos.text('Données chargées dans la base de données')
+            database_infos.empty()
     if 'database' in st.session_state:
         add_st_elements('h3', 'left', 'Base de données existante')
         if st.button('Reset'):
@@ -227,7 +238,7 @@ async def streamlit_main():
         if 'database' in st.session_state:
             add_st_elements('h3', 'left', '\n')
             add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
-            selected_constraints = select_constraints(get_columns())
+            selected_constraints = select_constraints()
             add_st_elements('h3', 'left', '\n')
             if st.button('Analyser'):
                 start = time.time()
