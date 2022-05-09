@@ -131,7 +131,7 @@ def select_constraints():
     selected_constraints = {}
     for column in constraints.keys():
         if st.checkbox(column, key=column):
-            column_constraints = [element[1] for element in constraints[column]]
+            column_constraints = [element[1] for element in constraints[column] if element[1] != '']
             for x, col in enumerate(st.columns(len(column_constraints))):
                 if col.checkbox(str(column_constraints[x]), key=str(column) + ' ' + str(column_constraints[x])):
                     if column not in selected_constraints:
@@ -190,10 +190,19 @@ def analyse(contraints):
 
 def display_result(result):
     constraints = get_constraints()
+    nb_errors = 0
     for key, value in result.items():
+        for x, element in enumerate(value):
+            if element != '':
+                nb_errors += element
+                result[key] = constraints[key][x][1] + ' : ' + str(element)
+            else:
+                result[key] = constraints[key][x][1] + ' : '
+
         result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
     st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
     st.table(result)
+    return str(nb_errors)
 
 
 async def streamlit_main():
@@ -243,8 +252,13 @@ async def streamlit_main():
             if st.button('Analyser'):
                 start = time.time()
                 result = analyse(selected_constraints)
+                result2 = analyse({key: [v[0] for v in value] for (key, value) in get_constraints().items()})
+
                 add_st_elements('h3', 'left', "Résultat de l'analyse")
-                display_result(result)
+                nb_errors = display_result(result)
+                add_st_elements('h3', 'left', nb_errors + " erreurs")
+                nb_errors_2 = display_result(result2)
+                add_st_elements('h3', 'left', str(nb_errors_2) + " erreurs")
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
 
 
