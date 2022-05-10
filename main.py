@@ -11,6 +11,9 @@ import time
 import io
 
 
+db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+
+
 def add_st_elements(type, style, text):
     st.markdown("<" + type + " style=" + style + ": center; color: white;'>" + text + "</" + type + ">", unsafe_allow_html=True)
 
@@ -58,50 +61,32 @@ def write_to_database(data, choice):
     elif choice == 'upload':
         dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
     dataframe['date'] = dataframe['tpep_pickup_datetime'].str[:7]
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
-    with db_connection.cursor() as cursor:
-        cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
-    db_connection.close()
-    db_connection = create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect()
-    dataframe.to_sql('yellow_tripdata', db_connection, if_exists='replace')
-    db_connection.close()
+    with create_engine('mysql+pymysql://root:password@127.0.0.1', isolation_level='AUTOCOMMIT').connect() as connection:
+        connection.execute('CREATE DATABASE IF NOT EXISTS ppd')
+    with create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect() as connection:
+        dataframe.to_sql('yellow_tripdata', connection, if_exists='replace')
     st.session_state['database'] = 'ok'
 
 
 def check_database():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         cursor.execute('SHOW DATABASES')
         databases = [x[0] for x in cursor.fetchall()]
-    db_connection.close()
     if 'ppd' in databases:
         st.session_state['database'] = 'ok'
 
 
 def reset_database():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
     with db_connection.cursor() as cursor:
         cursor.execute('DROP DATABASE ppd')
-    db_connection.close()
-    del st.session_state['database']
-
-
-def get_columns():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
-    with db_connection.cursor() as cursor:
-        cursor.execute('SHOW COLUMNS FROM yellow_tripdata')
-        columns = [x[0] for x in cursor.fetchall() if x[0] not in ['index', 'Date']]
-    db_connection.close()
-    return columns
+    for key in st.session_state.keys():
+        del st.session_state[key]
 
 
 def get_rows():
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
     with db_connection.cursor() as cursor:
-        cursor.execute('SELECT COUNT(*) FROM yellow_tripdata')
-        rows = cursor.fetchall()[0][0]
-    db_connection.close()
-    return rows
+        cursor.execute('SELECT COUNT(*) FROM ppd.yellow_tripdata')
+    return cursor.fetchall()[0][0]
 
 
 def get_constraints():
@@ -142,41 +127,44 @@ def select_constraints():
     return selected_constraints
 
 
-def get_result(column, contraint):
-    db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+def query(column, condition):
     with db_connection.cursor() as cursor:
-        if contraint == '':
-            return ''
-        if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
-        if contraint == 'float':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
-        if contraint == 'int':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
-        if contraint == 'date':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
-        if contraint == 'none':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' IS NULL')
-        if type(contraint) is list:
-            if column == 'extra':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 0.5 AND ' + column + ' != 1.0')
-            if column in ['payment_type', 'RatecodeID']:
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6')
-            if column == 'store_and_fwd_flag':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
-            if column == 'VendorID':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 1 AND ' + column + ' != 2')
-        if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-            compared_value = contraint.split()[1]
-            comparator = contraint.split()[0]
-            if comparator == '>=':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < ' + compared_value)
-            if comparator == '>':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' <= ' + compared_value)
-            if comparator == '<':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' => ' + compared_value)
-            if comparator == '=':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != ' + compared_value)
+        return cursor.execute('SELECT ' + column + ' FROM ppd.yellow_tripdata WHERE ' + condition)
+
+
+def get_result(column, contraint):
+    if contraint == '':
+        return ''
+    if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
+        return query(column, 'NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
+    if contraint == 'float':
+        return query(column, column + " NOT RLIKE '^[-+]?[0-9]+\\\\.?[0-9]*$'")
+    if contraint == 'int':
+        return query(column, column + ' NOT RLIKE "^[0-9]+$"')
+    if contraint == 'date':
+        return query(column, 'STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
+    if contraint == 'none':
+        return query(column, column + ' IS NULL')
+    if type(contraint) is list:
+        if column == 'extra':
+            return query(column, column + ' != 0.5 AND ' + column + ' != 1.0')
+        if column in ['payment_type', 'RatecodeID']:
+            return query(column, column + ' < 1 OR ' + column + ' > 6')
+        if column == 'store_and_fwd_flag':
+            return query(column, column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
+        if column == 'VendorID':
+            return query(column, column + ' != 1 AND ' + column + ' != 2')
+    if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
+        compared_value = contraint.split()[1]
+        comparator = contraint.split()[0]
+        if comparator == '>=':
+            return query(column, column + ' < ' + compared_value)
+        if comparator == '>':
+            return query(column, column + ' <= ' + compared_value)
+        if comparator == '<':
+            return query(column, column + ' => ' + compared_value)
+        if comparator == '=':
+            return query(column, column + ' != ' + compared_value)
 
 
 def analyse(contraints):
@@ -193,13 +181,11 @@ def display_result(result):
     nb_errors = 0
     for key, value in result.items():
         for x, element in enumerate(value):
-            if element != '':
+            if element != '' and element is not None:
                 nb_errors += element
-                result[key] = constraints[key][x][1] + ' : ' + str(element)
+                result[key][x] = constraints[key][x][1] + ' : ' + str(element)
             else:
-                result[key] = constraints[key][x][1] + ' : '
-
-        result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
+                result[key][x] = ''
     st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
     st.table(result)
     return str(nb_errors)
@@ -233,9 +219,9 @@ async def streamlit_main():
                     database_infos.text('Données telechargées, chargement dans la base de données')
                     write_to_database(responses, 'download')
                     database_infos.empty()
-                    database_infos.text('Données chargéss dans la base de données')
+                    database_infos.text('Données chargées dans la base de données')
             else:
-                database_infos.text('Données telechargéss, chargement dans la base de données')
+                database_infos.text('Données telechargées, chargement dans la base de données')
                 write_to_database(uploaded_file, 'upload')
                 database_infos.empty()
                 database_infos.text('Données chargées dans la base de données')
@@ -250,16 +236,19 @@ async def streamlit_main():
             selected_constraints = select_constraints()
             add_st_elements('h3', 'left', '\n')
             if st.button('Analyser'):
-                start = time.time()
-                result = analyse(selected_constraints)
-                result2 = analyse({key: [v[0] for v in value] for (key, value) in get_constraints().items()})
-
                 add_st_elements('h3', 'left', "Résultat de l'analyse")
-                nb_errors = display_result(result)
-                add_st_elements('h3', 'left', nb_errors + " erreurs")
-                nb_errors_2 = display_result(result2)
-                add_st_elements('h3', 'left', str(nb_errors_2) + " erreurs")
+                start = time.time()
+                rows = str(get_rows())
+                specific_result = analyse(selected_constraints)
+                add_st_elements('h5', 'left', 'Analyse spécifique')
+                specific_nb_errors = display_result(specific_result)
+                add_st_elements('p', 'left', str(specific_nb_errors) + ' erreurs sur ' + rows + ' lignes')
+                global_result = analyse({key: [v[0] for v in value] for (key, value) in get_constraints().items()})
+                add_st_elements('h5', 'left', 'Analyse globale')
+                global_nb_errors = display_result(global_result)
+                add_st_elements('p', 'left', global_nb_errors + ' erreurs sur ' + rows + ' lignes')
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
+    db_connection.close()
 
 
 asyncio.run(streamlit_main())
