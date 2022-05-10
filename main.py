@@ -104,29 +104,7 @@ def get_rows():
     return rows
 
 
-# def get_constraints():
-#     return {
-#         'congestion_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
-#         'DOLocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
-#         'extra': [['float', "N'est pas de type float"], ['none', 'Est vide'], [['0.5', '1.0'], 'N appartient pas à [0.5, 1.0]']],
-#         'fare_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['> 0', 'N est pas > 0']],
-#         'improvement_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
-#         'mta_tax': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
-#         'passenger_count': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['>= 1', 'N est pas >= 1']],
-#         'payment_type': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-#         'PULocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
-#         'RatecodeID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-#         'store_and_fwd_flag': [['str', "N'est pas de type str"], ['none', 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
-#         'tip_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-#         'tolls_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-#         'total_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-#         'tpep_dropoff_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
-#         'tpep_pickup_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
-#         'trip_distance': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-#         'VendorID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
-
-
-
+# Retourne les contraintes sous forme d'un dictionnaire {colonne: contraintes}, avec les contraintes sous forme de dictionnaire également
 def get_constraints():
     return {
         'congestion_surcharge': {'type': 'float'},
@@ -150,22 +128,7 @@ def get_constraints():
     }
 
 
-# def select_constraints():
-#     constraints = get_constraints()
-#     selected_constraints = {}
-#     for column in constraints.keys():
-#         if st.checkbox(column, key=column):
-#             column_constraints = [element[1] for element in constraints[column] if element[1] != '']
-#             for x, col in enumerate(st.columns(len(column_constraints))):
-#                 if col.checkbox(str(column_constraints[x]), key=str(column) + ' ' + str(column_constraints[x])):
-#                     if column not in selected_constraints:
-#                         selected_constraints[column] = [''] * 3
-#                         selected_constraints[column][x] = constraints[column][x][0]
-#                     else:
-#                         selected_constraints[column][x] = constraints[column][x][0]
-#     return selected_constraints
-
-
+# Retourne les contraintes sélectionnées sous forme d'un dictionnaire {colonne: contraintes}, avec les contraintes sous forme de dictionnaire également
 def select_constraints():
     constraints = get_constraints()
     selected_constraints = {}
@@ -175,44 +138,8 @@ def select_constraints():
     return selected_constraints
 
 
-# def get_result(column, contraint):
-#     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
-#     with db_connection.cursor() as cursor:
-#         if contraint == '':
-#             return ''
-#         if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
-#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
-#         if contraint == 'float':
-#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
-#         if contraint == 'int':
-#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
-#         if contraint == 'date':
-#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
-#         if contraint == 'none':
-#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' IS NULL')
-#         if type(contraint) is list:
-#             if column == 'extra':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 0.5 AND ' + column + ' != 1.0')
-#             if column in ['payment_type', 'RatecodeID']:
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6')
-#             if column == 'store_and_fwd_flag':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
-#             if column == 'VendorID':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 1 AND ' + column + ' != 2')
-#         if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-#             compared_value = contraint.split()[1]
-#             comparator = contraint.split()[0]
-#             if comparator == '>=':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < ' + compared_value)
-#             if comparator == '>':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' <= ' + compared_value)
-#             if comparator == '<':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' => ' + compared_value)
-#             if comparator == '=':
-#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != ' + compared_value)
-
-
-def get_result(column, constraint):
+# Retourne le pourcentage de complétude et de consistence pour chaque colonne
+def get_result(column, constraint, nb_rows):
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
 
     result = {'completeness': 0, 'consistency': 0}
@@ -232,6 +159,10 @@ def get_result(column, constraint):
 
         if constraint.get('spec', None) is not None:
             result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE !({column} {constraint["spec"]})')
+    db_connection.close()
+
+    result['completeness'] = f'{round(100 - (result["completeness"]*100/nb_rows), 1)}%'
+    result['consistency'] = f'{round(100 - (result["consistency"]*100/nb_rows), 1)}%'
 
     return result
 
@@ -247,9 +178,10 @@ def get_result(column, constraint):
 
 def analyse(constraints):
     result = {}
+    nb_rows = get_rows()
+
     for column, constraint in constraints.items():
-        result[column] = get_result(column, constraint)
-    print(result)
+        result[column] = get_result(column, constraint, nb_rows)
     return result
 
 
