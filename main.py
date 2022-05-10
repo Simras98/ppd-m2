@@ -104,26 +104,66 @@ def get_rows():
     return rows
 
 
+# def get_constraints():
+#     return {
+#         'congestion_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
+#         'DOLocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
+#         'extra': [['float', "N'est pas de type float"], ['none', 'Est vide'], [['0.5', '1.0'], 'N appartient pas à [0.5, 1.0]']],
+#         'fare_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['> 0', 'N est pas > 0']],
+#         'improvement_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
+#         'mta_tax': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
+#         'passenger_count': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['>= 1', 'N est pas >= 1']],
+#         'payment_type': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+#         'PULocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
+#         'RatecodeID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
+#         'store_and_fwd_flag': [['str', "N'est pas de type str"], ['none', 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
+#         'tip_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+#         'tolls_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+#         'total_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+#         'tpep_dropoff_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
+#         'tpep_pickup_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
+#         'trip_distance': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
+#         'VendorID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
+
+
+
 def get_constraints():
     return {
-        'congestion_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
-        'DOLocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
-        'extra': [['float', "N'est pas de type float"], ['none', 'Est vide'], [['0.5', '1.0'], 'N appartient pas à [0.5, 1.0]']],
-        'fare_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['> 0', 'N est pas > 0']],
-        'improvement_surcharge': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['', '']],
-        'mta_tax': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['= 0.5', 'N est pas = 0.5']],
-        'passenger_count': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['>= 1', 'N est pas >= 1']],
-        'payment_type': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-        'PULocationID': [['int', "N'est pas de type int"], ['none', 'Est vide'], ['', '']],
-        'RatecodeID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2', '3', '4', '5', '6'], 'N appartient pas à [1, 2, 3, 4, 5, 6]']],
-        'store_and_fwd_flag': [['str', "N'est pas de type str"], ['none', 'Est vide'], [['Y', 'N'], 'N appartient pas à [Y, N]']],
-        'tip_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'tolls_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'total_amount': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'tpep_dropoff_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['> tpep_pickup_datetime', 'N est pas > tpep_pickup_datetime']],
-        'tpep_pickup_datetime': [['date', "N'est pas de type date"], ['none', 'Est vide'], ['< tpep_dropoff_datetime', 'N est pas < tpep_dropoff_datetime']],
-        'trip_distance': [['float', "N'est pas de type float"], ['none', 'Est vide'], ['>= 0', 'N est pas >= 0']],
-        'VendorID': [['int', "N'est pas de type int"], ['none', 'Est vide'], [['1', '2'], 'N appartient pas à [1, 2]']]}
+        'congestion_surcharge': {'type': 'float'},
+        'DOLocationID': {'type': 'int'},
+        'extra': {'type': 'float'},
+        'fare_amount': {'type': 'float'},
+        'improvement_surcharge': {'type': 'float', 'values': '("0", "0.3")'},
+        'mta_tax': {'type': 'float', 'values': '("0", "0.5")'},
+        'passenger_count': {'type': 'int'},
+        'payment_type': {'type': 'int', 'values': '("1", "2", "3", "4", "5", "6")'},
+        'PULocationID': {'type': 'int'},
+        'RatecodeID': {'type': 'int', 'values': '("1", "2", "3", "4", "5", "6")'},
+        'store_and_fwd_flag': {'type': 'string', 'values': '("Y", "N")'},
+        'tip_amount': {'type': 'float'},
+        'tolls_amount': {'type': 'float'},
+        'total_amount': {'type': 'float'},
+        'tpep_dropoff_datetime': {'type': 'date', 'spec': '>= tpep_pickup_datetime'},
+        'tpep_pickup_datetime': {'type': 'date', 'spec': '<= tpep_dropoff_datetime'},
+        'trip_distance': {'type': 'float'},
+        'VendorID': {'type': 'int', 'values': '("1", "2")'}
+    }
+
+
+# def select_constraints():
+#     constraints = get_constraints()
+#     selected_constraints = {}
+#     for column in constraints.keys():
+#         if st.checkbox(column, key=column):
+#             column_constraints = [element[1] for element in constraints[column] if element[1] != '']
+#             for x, col in enumerate(st.columns(len(column_constraints))):
+#                 if col.checkbox(str(column_constraints[x]), key=str(column) + ' ' + str(column_constraints[x])):
+#                     if column not in selected_constraints:
+#                         selected_constraints[column] = [''] * 3
+#                         selected_constraints[column][x] = constraints[column][x][0]
+#                     else:
+#                         selected_constraints[column][x] = constraints[column][x][0]
+#     return selected_constraints
 
 
 def select_constraints():
@@ -131,78 +171,102 @@ def select_constraints():
     selected_constraints = {}
     for column in constraints.keys():
         if st.checkbox(column, key=column):
-            column_constraints = [element[1] for element in constraints[column] if element[1] != '']
-            for x, col in enumerate(st.columns(len(column_constraints))):
-                if col.checkbox(str(column_constraints[x]), key=str(column) + ' ' + str(column_constraints[x])):
-                    if column not in selected_constraints:
-                        selected_constraints[column] = [''] * 3
-                        selected_constraints[column][x] = constraints[column][x][0]
-                    else:
-                        selected_constraints[column][x] = constraints[column][x][0]
+            selected_constraints[column] = constraints[column]
     return selected_constraints
 
 
-def get_result(column, contraint):
+# def get_result(column, contraint):
+#     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+#     with db_connection.cursor() as cursor:
+#         if contraint == '':
+#             return ''
+#         if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
+#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
+#         if contraint == 'float':
+#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
+#         if contraint == 'int':
+#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
+#         if contraint == 'date':
+#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
+#         if contraint == 'none':
+#             return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' IS NULL')
+#         if type(contraint) is list:
+#             if column == 'extra':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 0.5 AND ' + column + ' != 1.0')
+#             if column in ['payment_type', 'RatecodeID']:
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6')
+#             if column == 'store_and_fwd_flag':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
+#             if column == 'VendorID':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 1 AND ' + column + ' != 2')
+#         if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
+#             compared_value = contraint.split()[1]
+#             comparator = contraint.split()[0]
+#             if comparator == '>=':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < ' + compared_value)
+#             if comparator == '>':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' <= ' + compared_value)
+#             if comparator == '<':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' => ' + compared_value)
+#             if comparator == '=':
+#                 return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != ' + compared_value)
+
+
+def get_result(column, constraint):
     db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password', database='ppd')
+
+    result = {'completeness': 0, 'consistency': 0}
+
     with db_connection.cursor() as cursor:
-        if contraint == '':
-            return ''
-        if contraint in ['< tpep_dropoff_datetime', '> tpep_pickup_datetime']:
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE NOT ' + column + ' ' + contraint.split()[0] + '  ' + contraint.split()[1])
-        if contraint == 'float':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
-        if contraint == 'int':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT RLIKE "^[0-9]+$"')
-        if contraint == 'date':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE STR_TO_DATE(' + column + ', "%D,%M,%Y") IS NOT NULL')
-        if contraint == 'none':
-            return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' IS NULL')
-        if type(contraint) is list:
-            if column == 'extra':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 0.5 AND ' + column + ' != 1.0')
-            if column in ['payment_type', 'RatecodeID']:
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < 1 OR ' + column + ' > 6')
-            if column == 'store_and_fwd_flag':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' NOT LIKE "Y" AND ' + column + ' NOT LIKE "N"')
-            if column == 'VendorID':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != 1 AND ' + column + ' != 2')
-        if contraint in ['>= 0', '>= 1', '> 0', '> 1', '= 0.5']:
-            compared_value = contraint.split()[1]
-            comparator = contraint.split()[0]
-            if comparator == '>=':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' < ' + compared_value)
-            if comparator == '>':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' <= ' + compared_value)
-            if comparator == '<':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' => ' + compared_value)
-            if comparator == '=':
-                return cursor.execute('SELECT ' + column + ' FROM yellow_tripdata WHERE ' + column + ' != ' + compared_value)
+        result['completeness'] = cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} IS NULL')
 
+        if constraint.get('values', None) is not None:
+            result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} NOT IN {constraint["values"]}')
+        else:
+            if constraint['type'] == 'int':
+                result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} NOT RLIKE "^[0-9]+$"')
+            if constraint['type'] == 'float':
+                result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} NOT RLIKE "^[0-9]+\\.?[0-9]*$"')
+            if constraint['type'] == 'date':
+                result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE STR_TO_DATE({column}, "%Y-%m-%d %H:%i:%s") IS NULL')
 
-def analyse(contraints):
-    result = {}
-    for column in contraints.keys():
-        result[column] = [None] * 3
-        for x, constraint in enumerate(contraints[column]):
-            result[column][x] = get_result(column, constraint)
+        if constraint.get('spec', None) is not None:
+            result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE !({column} {constraint["spec"]})')
+
     return result
 
 
-def display_result(result):
-    constraints = get_constraints()
-    nb_errors = 0
-    for key, value in result.items():
-        for x, element in enumerate(value):
-            if element != '':
-                nb_errors += element
-                result[key] = constraints[key][x][1] + ' : ' + str(element)
-            else:
-                result[key] = constraints[key][x][1] + ' : '
+# def analyse(constraints):
+#     result = {}
+#     for column, constraint in constraints.items():
+#         result[column] = [None] * 3
+#         for x, constraint in enumerate(constraints[column]):
+#             result[column][x] = get_result(column, constraint)
+#     return result
 
-        result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
-    st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
-    st.table(result)
-    return str(nb_errors)
+
+def analyse(constraints):
+    result = {}
+    for column, constraint in constraints.items():
+        result[column] = get_result(column, constraint)
+    print(result)
+    return result
+
+
+# def display_result(result):
+#     nb_errors = 0
+#     for column, data in result.items():
+#         for key, value in data.items():
+#             result[key] = if element != '':
+#                 nb_errors += element
+#                 result[key] = constraints[key][x][1] + ' : ' + str(element)
+#             else:
+#                 result[key] = constraints[key][x][1] + ' : '
+#
+#         result[key] = [constraints[key][x][1] + ' : ' + str(element) if element != '' else '' for x, element in enumerate(value)]
+#     st.markdown("""<style>.row_heading.level0 {display:none}.blank {display:none}</style>""", unsafe_allow_html=True)
+#     st.table(result)
+#     return str(nb_errors)
 
 
 async def streamlit_main():
@@ -251,14 +315,11 @@ async def streamlit_main():
             add_st_elements('h3', 'left', '\n')
             if st.button('Analyser'):
                 start = time.time()
-                result = analyse(selected_constraints)
-                result2 = analyse({key: [v[0] for v in value] for (key, value) in get_constraints().items()})
-
                 add_st_elements('h3', 'left', "Résultat de l'analyse")
-                nb_errors = display_result(result)
-                add_st_elements('h3', 'left', nb_errors + " erreurs")
-                nb_errors_2 = display_result(result2)
-                add_st_elements('h3', 'left', str(nb_errors_2) + " erreurs")
+                st.table(analyse(selected_constraints))
+                add_st_elements('h3', 'left', "Analyse complète")
+                st.table(analyse(get_constraints()))
+
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
 
 
