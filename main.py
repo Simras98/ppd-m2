@@ -136,15 +136,13 @@ def get_sql_typechecker(type, column):
 def get_result(column, constraint, nb_rows):
     result = {'completeness': 0, 'consistency': 0}
     with db_connection.cursor() as cursor:
-        result['completeness'] = cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} IS NULL')
+        result['completeness'] = cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} IS NULL')
         if constraint.get('values', None) is not None:
-            result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {column} NOT IN {constraint["values"]}')
+            result['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} NOT IN {constraint["values"]}')
         elif constraint.get('type', None) is not None and constraint['type'] != 'string':
-            print(f'SELECT * FROM yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
-            result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
+            result['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
         if constraint.get('spec', None) is not None:
-            result['consistency'] += cursor.execute(f'SELECT * FROM yellow_tripdata WHERE !({column} {constraint["spec"]})')
-    db_connection.close()
+            result['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE !({column} {constraint["spec"]})')
     result['completeness'] = f'{round(100 - (result["completeness"]*100/nb_rows), 1)}%'
     result['consistency'] = f'{round(100 - (result["consistency"]*100/nb_rows), 1)}%'
     return result
@@ -154,8 +152,8 @@ def get_full_result(nb_rows):
     constraints = get_constraints()
     total = {}
     result = {'completeness': 0, 'consistency': 0}
-    completeness_query = 'SELECT * FROM yellow_tripdata WHERE 0=1'
-    consistency_query = 'SELECT * FROM yellow_tripdata WHERE 0=1'
+    completeness_query = 'SELECT * FROM ppd.yellow_tripdata WHERE 0=1'
+    consistency_query = 'SELECT * FROM ppd.yellow_tripdata WHERE 0=1'
     for column, constraint in constraints.items():
         completeness_query += f' OR {column} IS NULL'
         for key, value in constraint.items():
@@ -165,12 +163,9 @@ def get_full_result(nb_rows):
                 consistency_query += f' OR {get_sql_typechecker(value, column)}'
             if key == 'spec':
                 consistency_query += f' OR !({column} {value})'
-    print(completeness_query)
-    print(consistency_query)
     with db_connection.cursor() as cursor:
         result['completeness'] = cursor.execute(completeness_query)
         result['consistency'] = cursor.execute(consistency_query)
-    db_connection.close()
     result['completeness'] = f'{round(100 - (result["completeness"] * 100 / nb_rows), 1)}%'
     result['consistency'] = f'{round(100 - (result["consistency"] * 100 / nb_rows), 1)}%'
     total["result"] = result
@@ -179,7 +174,6 @@ def get_full_result(nb_rows):
 
 def analyse(constraints, nb_rows):
     result = {}
-
     for column, constraint in constraints.items():
         result[column] = get_result(column, constraint, nb_rows)
     return result
@@ -236,7 +230,6 @@ async def streamlit_main():
                 st.table(analyse(selected_constraints, nb_rows))
                 add_st_elements('h3', 'left', "Analyse complète")
                 st.table(get_full_result(nb_rows))
-
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
     db_connection.close()
 
