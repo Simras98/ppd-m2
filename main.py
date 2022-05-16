@@ -113,9 +113,12 @@ def get_constraints():
 
 def select_constraints():
     constraints = get_constraints()
+    contraints = ['Ensemble'] + list(constraints.keys())
     temp = st.multiselect(
         label='',
-        options=constraints.keys())
+        options=contraints)
+    if 'Ensemble' in contraints:
+        return {key: value for key, value in constraints.items()}
     return {constraint: constraints[constraint] for constraint in temp}
 
 
@@ -128,7 +131,11 @@ def get_sql_typechecker(type, column):
         return f'STR_TO_DATE({column}, "%Y-%m-%d %H:%i:%s") IS NULL'
 
 
-def get_specific_result(constraints):
+def percentage(value, total):
+    return round(100 - (value * 100 / total), 1)
+
+
+def get_specific_result(constraints, nb_rows):
     result = {}
     for column, constraint in constraints.items():
         temp = {'completeness': 0, 'consistency': 0}
@@ -140,12 +147,18 @@ def get_specific_result(constraints):
                 temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
             if constraint.get('spec', None) is not None:
                 temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE !({column} {constraint["spec"]})')
-        temp['total'] = int(temp['completeness']) + int(temp['consistency'])
+        temp['total'] = f"{percentage(int(temp['completeness']) + int(temp['consistency']), nb_rows)}%"
+        temp['completeness'] = f'{percentage(temp["completeness"], nb_rows)}%'
+        temp['consistency'] = f'{percentage(temp["consistency"], nb_rows)}%'
         result[column] = temp
     return result
 
 
-def get_full_result():
+def percentage(value, total):
+    return round(100 - (value * 100 / total), 1)
+
+
+def get_full_result(nb_rows):
     result = {'completeness': 0, 'consistency': 0}
     completeness_query = 'SELECT * FROM ppd.yellow_tripdata WHERE 0=1'
     consistency_query = 'SELECT * FROM ppd.yellow_tripdata WHERE 0=1'
@@ -158,9 +171,12 @@ def get_full_result():
                 consistency_query += f' OR {get_sql_typechecker(value, column)}'
             if key == 'spec':
                 consistency_query += f' OR !({column} {value})'
+    result['lignes'] = nb_rows
     with db_connection.cursor() as cursor:
         result['completeness'] = cursor.execute(completeness_query)
         result['consistency'] = cursor.execute(consistency_query)
+    result['completeness'] = f'{percentage(result["completeness"], nb_rows)}%'
+    result['consistency'] = f'{percentage(result["consistency"], nb_rows)}%'
     return result
 
 
@@ -201,22 +217,26 @@ async def streamlit_main():
             database_infos.empty()
     if 'database' in st.session_state:
         add_st_elements('h3', 'left', 'Base de données existante')
-        if st.button('Reset'):
+        if st.button('Reinitialiser'):
             reset_database()
         if 'database' in st.session_state:
             add_st_elements('h3', 'left', '\n')
-            add_st_elements('h3', 'left', 'Choisissez les contraintes que vous souhaitez')
+            add_st_elements('h3', 'left', 'Choisissez les attributs que vous souhaitez analyser')
             selected_constraints = select_constraints()
             add_st_elements('h3', 'left', '\n')
             if st.button('Analyser'):
                 start = time.time()
                 add_st_elements('h3', 'left', "Résultats")
-                full_result = get_full_result()
+                add_st_elements('h4', 'left', "Analyse globale")
+                nb_rows = get_rows()
+                full_result = get_full_result(nb_rows)
                 for x, col in enumerate(st.columns(len(full_result))):
                     col.metric(label=list(full_result)[x], value=list(full_result.values())[x])
                 add_st_elements('h4', 'left', "Analyse spécifique")
-                st.table(get_specific_result(selected_constraints))
+                st.table(get_specific_result(selected_constraints, nb_rows))
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
+                add_st_elements('h4', 'left', "Tableau des contraintes")
+                st.json(get_constraints())
     db_connection.close()
 
 
