@@ -4,13 +4,14 @@ import aiohttp as aiohttp
 import streamlit as st
 import pandas as pd
 import cryptography
+import MySQLdb
 import requests
 import asyncio
-import pymysql
 import time
 import io
 
-db_connection = pymysql.connect(host='127.0.0.1', user='root', port=3306, password='password')
+database = MySQLdb.connect(host='127.0.0.1', user='root', port=3306, password='password')
+cursor = database.cursor()
 
 
 def add_st_elements(type, style, text):
@@ -68,23 +69,20 @@ def write_to_database(data, choice):
 
 
 def check_database():
-    with db_connection.cursor() as cursor:
-        cursor.execute('SHOW DATABASES')
-        databases = [x[0] for x in cursor.fetchall()]
+    cursor.execute('SHOW DATABASES')
+    databases = [x[0] for x in cursor.fetchall()]
     if 'ppd' in databases:
         st.session_state['database'] = 'ok'
 
 
 def reset_database():
-    with db_connection.cursor() as cursor:
-        cursor.execute('DROP DATABASE ppd')
+    cursor.execute('DROP DATABASE ppd')
     for key in st.session_state.keys():
         del st.session_state[key]
 
 
 def get_rows():
-    with db_connection.cursor() as cursor:
-        cursor.execute('SELECT COUNT(*) FROM ppd.yellow_tripdata')
+    cursor.execute('SELECT COUNT(*) FROM ppd.yellow_tripdata')
     return cursor.fetchall()[0][0]
 
 
@@ -138,14 +136,13 @@ def get_specific_result(constraints, nb_rows):
     result = {}
     for column, constraint in constraints.items():
         temp = {'completeness': 0, 'consistency': 0}
-        with db_connection.cursor() as cursor:
-            temp['completeness'] = cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} IS NULL')
-            if constraint.get('values', None) is not None:
-                temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} NOT IN {constraint["values"]}')
-            elif constraint.get('type', None) is not None and constraint['type'] != 'string':
-                temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
-            if constraint.get('spec', None) is not None:
-                temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE !({column} {constraint["spec"]})')
+        temp['completeness'] = cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} IS NULL')
+        if constraint.get('values', None) is not None:
+            temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {column} NOT IN {constraint["values"]}')
+        elif constraint.get('type', None) is not None and constraint['type'] != 'string':
+            temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE {get_sql_typechecker(constraint["type"], column)}')
+        if constraint.get('spec', None) is not None:
+            temp['consistency'] += cursor.execute(f'SELECT * FROM ppd.yellow_tripdata WHERE !({column} {constraint["spec"]})')
         temp['total'] = f"{percentage(int(temp['completeness']) + int(temp['consistency']), nb_rows)}%"
         temp['completeness'] = f'{percentage(temp["completeness"], nb_rows)}%'
         temp['consistency'] = f'{percentage(temp["consistency"], nb_rows)}%'
@@ -171,9 +168,8 @@ def get_full_result(nb_rows):
             if key == 'spec':
                 consistency_query += f' OR !({column} {value})'
     result['lignes'] = nb_rows
-    with db_connection.cursor() as cursor:
-        result['completeness'] = cursor.execute(completeness_query)
-        result['consistency'] = cursor.execute(consistency_query)
+    result['completeness'] = cursor.execute(completeness_query)
+    result['consistency'] = cursor.execute(consistency_query)
     result['completeness'] = f'{percentage(result["completeness"], nb_rows)}%'
     result['consistency'] = f'{percentage(result["consistency"], nb_rows)}%'
     return result
@@ -236,7 +232,7 @@ async def streamlit_main():
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
                 add_st_elements('h4', 'left', "Tableau des contraintes")
                 st.json(get_constraints())
-    db_connection.close()
+    database.close()
 
 
 asyncio.run(streamlit_main())
