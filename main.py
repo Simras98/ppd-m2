@@ -19,7 +19,7 @@ def add_st_elements(type, style, text):
 
 def get_values():
     soup = BeautifulSoup(requests.get('https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page').text, 'html.parser')
-    return [[url['href'][-11:-7], url['href'][-6:-4], url['href']] for url in soup.find_all('a', {'title': 'Yellow Taxi Trip Records'})]
+    return [[url['href'][-15:-11], url['href'][-10:-8], url['href']] for url in soup.find_all('a', {'title': 'Yellow Taxi Trip Records'})]
 
 
 def select_values(values):
@@ -55,11 +55,11 @@ def write_to_database(data, choice):
     if choice == 'download':
         temp = []
         for element in data:
-            temp.append(pd.read_csv(element, index_col=None, header=0, dtype=str))
+            temp.append(pd.read_parquet(element))
         dataframe = pd.concat(temp, axis=0, ignore_index=True)
     elif choice == 'upload':
-        dataframe = pd.read_csv(data, index_col=None, header=0, dtype=str)
-    dataframe['date'] = dataframe['tpep_pickup_datetime'].str[:7]
+        dataframe = pd.read_parquet(data)
+    dataframe['date'] = dataframe['tpep_pickup_datetime'].astype(str).str[0:10]
     with create_engine('mysql+pymysql://root:password@127.0.0.1', isolation_level='AUTOCOMMIT').connect() as connection:
         connection.execute('CREATE DATABASE IF NOT EXISTS ppd')
     with create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect() as connection:
@@ -90,6 +90,7 @@ def get_rows():
 
 def get_constraints():
     return {
+        'airport_fee': {'type': 'float', 'values': '("0", "1.25")'},
         'congestion_surcharge': {'type': 'float'},
         'DOLocationID': {'type': 'int'},
         'extra': {'type': 'float'},
@@ -114,10 +115,8 @@ def get_constraints():
 def select_constraints():
     constraints = get_constraints()
     contraints = ['Ensemble'] + list(constraints.keys())
-    temp = st.multiselect(
-        label='',
-        options=contraints)
-    if 'Ensemble' in contraints:
+    temp = st.multiselect(label='', options=contraints)
+    if 'Ensemble' in temp:
         return {key: value for key, value in constraints.items()}
     return {constraint: constraints[constraint] for constraint in temp}
 
@@ -192,7 +191,7 @@ async def streamlit_main():
         values = get_values()
         selected_urls = select_urls(values, select_values(values))
         add_st_elements('h3', 'left', 'Choisissez un fichier à charger')
-        uploaded_file = st.file_uploader('', type='csv', accept_multiple_files=False)
+        uploaded_file = st.file_uploader('', type='parquet', accept_multiple_files=False)
         add_st_elements('h3', 'left', '\n')
         if st.button('Suivant') or 'suivant' in st.session_state:
             add_st_elements('h3', 'left', '\n')
