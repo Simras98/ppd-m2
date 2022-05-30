@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import aiohttp as aiohttp
 import streamlit as st
 import pandas as pd
-import cryptography
 import MySQLdb
 import requests
 import asyncio
