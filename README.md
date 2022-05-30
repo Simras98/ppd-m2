@@ -41,11 +41,11 @@ Une fois les données chargées, vous pouvez choisir les attributs à analyser o
 
 Cliquez sur Analyser
 
-Une analyse globale sera afficher puis l'analyse spéficique en fonction des attributs précédements sélectionnés
+Une analyse globale sera affichée puis l'analyse spéficique en fonction des attributs précédements sélectionnés
 
 ![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/result.png)
 
-Un tableau de présentation des contraintes vous sera afficher en bas de page.
+Un tableau de présentation des contraintes vous sera affiché en bas de page.
 
 ![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/contrainttable.png)
 
