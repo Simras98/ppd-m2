@@ -9,8 +9,8 @@ import asyncio
 import time
 import io
 
-database = MySQLdb.connect(host='127.0.0.1', user='root', port=3306, password='password')
-cursor = database.cursor()
+connection = MySQLdb.connect(host='127.0.0.1', user='root', port=3306, password='password')
+cursor = connection.cursor()
 
 
 def add_st_elements(type, style, text):
@@ -46,7 +46,7 @@ async def get_datas(session, url):
     async with session.get(url) as raw_response:
         response = await raw_response.read()
     if raw_response.status == 200:
-        return io.StringIO(response.decode('utf-8'))
+        return io.BytesIO(response)
     else:
         return None
 
@@ -59,11 +59,9 @@ def write_to_database(data, choice):
         dataframe = pd.concat(temp, axis=0, ignore_index=True)
     elif choice == 'upload':
         dataframe = pd.read_parquet(data)
+    cursor.execute('CREATE DATABASE IF NOT EXISTS ppd')
     dataframe['date'] = dataframe['tpep_pickup_datetime'].astype(str).str[0:10]
-    with create_engine('mysql+pymysql://root:password@127.0.0.1', isolation_level='AUTOCOMMIT').connect() as connection:
-        connection.execute('CREATE DATABASE IF NOT EXISTS ppd')
-    with create_engine('mysql+pymysql://root:password@127.0.0.1/ppd', pool_recycle=3600).connect() as connection:
-        dataframe.to_sql('yellow_tripdata', connection, if_exists='replace')
+    dataframe.to_sql(con=create_engine('mysql+mysqldb://root:password@127.0.0.1:3306/ppd'), name='yellow_tripdata', if_exists='replace')
     st.session_state['database'] = 'ok'
 
 
@@ -231,7 +229,7 @@ async def streamlit_main():
                 add_st_elements('p', 'left', str('{:.2f}'.format(time.time() - start)) + ' s pour analyser les données')
                 add_st_elements('h4', 'left', "Tableau des contraintes")
                 st.json(get_constraints())
-    database.close()
+    connection.close()
 
 
 asyncio.run(streamlit_main())
