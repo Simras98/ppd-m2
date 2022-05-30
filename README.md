@@ -18,7 +18,7 @@ Vérifier que tous les packages sont bien installés. Ils sont répertoriés dan
 
 Ajouter une configuration d'éxécution :
 
-![This is an image](https://github.com/Simras98/ppd-m2/blob/db457ed258a96c25dc5f15bf4b1ce2e1283ea5ba/cd65aa2a7386f63864974f59fad67077.png)
+![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/config.png)
 
 Lancer votre base de données MySQL en local avec uwamp par exemple.
 
@@ -28,26 +28,26 @@ Vous pouvez lancer l'application, rendez-vous sur votre navigateur.
 
 ### Utilisation
 
-Pour tester l'application, vous pouvez utiliser à travers le module glisser-déposer une version réduite d'un des jeux de données concernés, il s'agit du fichier ????? à la racine du projet.
+Pour tester l'application, vous pouvez utiliser à travers le module glisser-déposer une version réduite d'un des jeux de données concernés, il s'agit du fichier yellow_tripdata_2022_01_reduce.parquet à la racine du projet.
 
-![This is an image]()
+![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/draganddrop.png)
 
 Une fois le fichier déposé, cliquez sur Suivant.
 Le jeu de données est alors téléchargé et la base chargée avec.
 
 Une fois les données chargées, vous pouvez choisir les attributs à analyser ou réiniatiliser la base.
 
-![This is an image]()
+![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/choiceattributs.png)
 
 Cliquez sur Analyser
 
 Une analyse globale sera afficher puis l'analyse spéficique en fonction des attributs précédements sélectionnés
 
-![This is an image]()
+![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/result.png)
 
 Un tableau de présentation des contraintes vous sera afficher en bas de page.
 
-![This is an image]()
+![This is an image](https://github.com/Simras98/ppd-m2/blob/931f0fd4617944ce1b64888b4e0c60bc0a18184b/pics/contrainttable.png)
 
 
 
