@@ -4,7 +4,6 @@ import aiohttp as aiohttp
 import streamlit as st
 import pandas as pd
 import MySQLdb
-import requests
 import asyncio
 import time
 import io
@@ -17,9 +16,10 @@ def add_st_elements(type, style, text):
     st.markdown("<" + type + " style=" + style + ": center; color: white;'>" + text + "</" + type + ">", unsafe_allow_html=True)
 
 
-def get_values():
-    soup = BeautifulSoup(requests.get('https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page').text, 'html.parser')
-    return [[url['href'][-15:-11], url['href'][-10:-8], url['href']] for url in soup.find_all('a', {'title': 'Yellow Taxi Trip Records'})]
+async def get_values(session):
+    async with session.get('https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page') as raw_response:
+        response = await raw_response.read()
+    return [[url['href'][-15:-11], url['href'][-10:-8], url['href']] for url in BeautifulSoup(response, 'html.parser').find_all('a', {'title': 'Yellow Taxi Trip Records'})]
 
 
 def select_values(values):
@@ -174,39 +174,39 @@ def get_full_result(nb_rows):
 
 async def streamlit_main():
     st.set_page_config(layout='centered')
-    add_st_elements('h1', 'left', "Application d'évaluation de qualité")
+    add_st_elements('h1', 'left', "Evaluation de la qualité de données")
     check_database()
     if 'database' not in st.session_state:
-        add_st_elements('h3', 'left', 'Base de données inexistante')
-        add_st_elements('h3', 'left', '\n')
-        add_st_elements('h3', 'left', 'Choisissez les fichiers que vous souhaitez télécharger')
-        add_st_elements('h3', 'left', '\n')
-        values = get_values()
-        selected_urls = select_urls(values, select_values(values))
-        add_st_elements('h3', 'left', 'Choisissez un fichier à charger')
-        uploaded_file = st.file_uploader('', type='parquet', accept_multiple_files=False)
-        add_st_elements('h3', 'left', '\n')
-        if st.button('Suivant') or 'suivant' in st.session_state:
+        async with aiohttp.ClientSession() as session:
+            add_st_elements('h3', 'left', 'Base de données inexistante')
             add_st_elements('h3', 'left', '\n')
-            if 'suivant' not in st.session_state:
-                st.session_state['suivant'] = 'ok'
-            database_infos = st.empty()
-            if not uploaded_file:
-                if selected_urls is not None:
-                    database_infos.text('Telechargement des fichiers')
-                    async with aiohttp.ClientSession() as session:
+            add_st_elements('h3', 'left', 'Choisissez les fichiers que vous souhaitez télécharger')
+            add_st_elements('h3', 'left', '\n')
+            values = await get_values(session)
+            selected_urls = select_urls(values, select_values(values))
+            add_st_elements('h3', 'left', 'Choisissez un fichier à charger')
+            uploaded_file = st.file_uploader('', type='parquet', accept_multiple_files=False)
+            add_st_elements('h3', 'left', '\n')
+            if st.button('Suivant') or 'suivant' in st.session_state:
+                add_st_elements('h3', 'left', '\n')
+                if 'suivant' not in st.session_state:
+                    st.session_state['suivant'] = 'ok'
+                database_infos = st.empty()
+                if not uploaded_file:
+                    if selected_urls is not None:
+                        database_infos.text('Telechargement des fichiers')
                         responses = await asyncio.gather(*[get_datas(session, selected_url) for selected_url in selected_urls])
-                    database_infos.empty()
+                        database_infos.empty()
+                        database_infos.text('Données telechargées, chargement dans la base de données')
+                        write_to_database(responses, 'download')
+                        database_infos.empty()
+                        database_infos.text('Données chargées dans la base de données')
+                else:
                     database_infos.text('Données telechargées, chargement dans la base de données')
-                    write_to_database(responses, 'download')
+                    write_to_database(uploaded_file, 'upload')
                     database_infos.empty()
                     database_infos.text('Données chargées dans la base de données')
-            else:
-                database_infos.text('Données telechargées, chargement dans la base de données')
-                write_to_database(uploaded_file, 'upload')
                 database_infos.empty()
-                database_infos.text('Données chargées dans la base de données')
-            database_infos.empty()
     if 'database' in st.session_state:
         add_st_elements('h3', 'left', 'Base de données existante')
         if st.button('Reinitialiser'):
