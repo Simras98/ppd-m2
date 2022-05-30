@@ -18,7 +18,7 @@ Vérifier que tous les packages sont bien installés. Ils sont répertoriés dan
 
 Ajouter une configuration d'éxécution :
 
-![cd65aa2a7386f63864974f59fad67077.png](:/6c2004a1181b49668b6f6cd1306b9a01)
+![This is an image](https://github.com/Simras98/ppd-m2/blob/db457ed258a96c25dc5f15bf4b1ce2e1283ea5ba/cd65aa2a7386f63864974f59fad67077.png)
 
 Lancer votre base de données MySQL en local avec uwamp par exemple.
 
@@ -30,24 +30,24 @@ Vous pouvez lancer l'application, rendez-vous sur votre navigateur.
 
 Pour tester l'application, vous pouvez utiliser à travers le module glisser-déposer une version réduite d'un des jeux de données concernés, il s'agit du fichier ????? à la racine du projet.
 
-![8348debffb943d64a2d0cde8604235c5.png](:/0e954c72e5f443b49bb909395afcfaa7)
+![This is an image]()
 
 Une fois le fichier déposé, cliquez sur Suivant.
 Le jeu de données est alors téléchargé et la base chargée avec.
 
 Une fois les données chargées, vous pouvez choisir les attributs à analyser ou réiniatiliser la base.
 
-![0b867264c3edbb25ce52518ea89fae66.png](:/aed9cd471cc840fdb24c68781369a809)
+![This is an image]()
 
 Cliquez sur Analyser
 
 Une analyse globale sera afficher puis l'analyse spéficique en fonction des attributs précédements sélectionnés
 
-![7ef333a6511ec3bf52a9a3babc400c29.png](:/e4bb633538cb463080e968fd911e9839)
+![This is an image]()
 
 Un tableau de présentation des contraintes vous sera afficher en bas de page.
 
-![65bee87f5bd5a8624a5c830126873758.png](:/c2df40bfdcaf4816a59034c535ede0e3)
+![This is an image]()
 
 
 
